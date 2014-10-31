@@ -32,10 +32,12 @@ public class cubrid_osquery
 			truncateTable(c, "_osquery_processes");
 
 			// Prepare insert statement
-			PreparedStatement stmt = c.prepareStatement("INSERT INTO _osquery_processes (pid, name) VALUES (?, ?)");
+			PreparedStatement stmt = c.prepareStatement(
+				"INSERT INTO _osquery_processes (pid, name, `user`, cmdline, path, on_disk, resident_size, phys_footprint, user_time, system_time, start_time, parent)"
+				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
 			// Prepare shell call
-			Process shell = Runtime.getRuntime().exec("ps -eo pid,user,comm");
+			Process shell = Runtime.getRuntime().exec("ps -eo pid,comm,user,rss,vsize,utime,stime,start_time,ppid,args"); // args is last!
 			BufferedReader input = new BufferedReader(new InputStreamReader(shell.getInputStream()));
 
 			boolean headerLine = true;
@@ -57,9 +59,28 @@ public class cubrid_osquery
 				// Split string
 				String[] split = line.split(" ");
 
+				// Set values
+				stmt.setInt(1, Integer.parseInt(split[0])); // pid
+				stmt.setString(2, split[1]); // name
+				stmt.setString(3, split[2]); // user
+				stmt.setString(5, split[9]); // path == first of args
+				stmt.setString(6, "0"); // on_disk
+				stmt.setString(7, split[3]); // resident_size
+				stmt.setString(8, split[4]); // phys_footprint
+				stmt.setString(9, split[5]); // user_time
+				stmt.setString(10, split[6]); // system_time
+				stmt.setString(11, split[7]); // start_time
+				stmt.setInt(12, Integer.parseInt(split[8])); // parent pid
+
+				// Build args
+				String args = split[9];
+				for (int i = 10; i < split.length; i ++)
+				{
+					args = args + " " + split[i];
+				}
+				stmt.setString(4, args); //args
+
 				// Add insert
-				stmt.setInt(1, Integer.parseInt(split[0]));
-				stmt.setString(2, split[2]);
 				stmt.addBatch();
 			}
 
