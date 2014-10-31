@@ -21,6 +21,8 @@ However, the view definition uses an always-true filter predicate (which is not 
 
 Selecting from the view **will generate new data in the related table, and will return the new data**.
 
+**If osquery views are heavily used** consider using the underlying tables as well as the **osquery_snapshot** method which populates all tables at once.
+
 ## Installation
 
 Use the `install.sh` script for automatic installation. Please provide the script with the database name as well as a user/password with appropriate privileges (DBA ftw).
